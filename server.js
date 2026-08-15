@@ -48,6 +48,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Atalhos sem ".html", pra não precisar decorar o nome exato do arquivo
+app.get('/admin', (req, res) => res.redirect('/admin.html'));
+app.get('/reset', (req, res) => res.redirect('/reset.html'));
+
 /* ---------- middleware: exige token válido de um e-mail administrador ---------- */
 async function exigirAdmin(req, res, next) {
   try {
