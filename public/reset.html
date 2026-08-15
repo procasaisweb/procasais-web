@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trocar senha — Procasais Web</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="rosette"></div>
+    <h1>Procasais Web</h1>
+    <p class="sub">Definir nova senha</p>
+
+    <div id="loadingMsg" class="loading-note">Validando link…</div>
+
+    <form id="resetPassForm" class="app-hidden">
+      <div class="field"><label>Nova senha (mín. 6 caracteres)</label><input type="password" id="novaSenha" minlength="6" required></div>
+      <div class="field"><label>Confirmar nova senha</label><input type="password" id="confirmaSenha" minlength="6" required></div>
+      <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+      <p class="login-error" id="resetPassError"></p>
+      <p class="login-error" id="resetPassOk" style="color:var(--teal);"></p>
+    </form>
+
+    <p class="switch-auth"><a href="/">Voltar para o login</a></p>
+  </div>
+</div>
+
+<script>
+const supa = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+const loadingMsg = document.getElementById('loadingMsg');
+const form = document.getElementById('resetPassForm');
+
+// O Supabase, ao carregar esta página vindo do link do e-mail, detecta o
+// token de recuperação na URL e emite o evento PASSWORD_RECOVERY com a
+// sessão já pronta para trocar a senha.
+supa.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY' && session) {
+    loadingMsg.classList.add('app-hidden');
+    form.classList.remove('app-hidden');
+  }
+});
+
+// fallback: se já existe sessão de recuperação ao carregar
+supa.auth.getSession().then(({ data }) => {
+  if (data.session) {
+    loadingMsg.classList.add('app-hidden');
+    form.classList.remove('app-hidden');
+  } else {
+    setTimeout(() => {
+      if (form.classList.contains('app-hidden')) {
+        loadingMsg.textContent = 'Link inválido ou expirado. Solicite um novo link na tela de login.';
+      }
+    }, 2500);
+  }
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('resetPassError');
+  const okEl = document.getElementById('resetPassOk');
+  errEl.textContent = ''; okEl.textContent = '';
+
+  const novaSenha = document.getElementById('novaSenha').value;
+  const confirmaSenha = document.getElementById('confirmaSenha').value;
+  if (novaSenha !== confirmaSenha) { errEl.textContent = 'As senhas não conferem.'; return; }
+
+  const { error } = await supa.auth.updateUser({ password: novaSenha });
+  if (error) { errEl.textContent = error.message; return; }
+  okEl.textContent = 'Senha alterada com sucesso! Redirecionando para o login…';
+  setTimeout(() => { window.location.href = '/'; }, 1800);
+});
+</script>
+</body>
+</html>

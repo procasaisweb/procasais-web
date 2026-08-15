@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Usuários — Procasais Web</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+<style>
+  .admin-wrap{ max-width:520px; margin:60px auto; padding:0 20px; }
+  .senha-row{ display:flex; gap:8px; }
+  .senha-row input{ flex:1; }
+  .senha-row button{
+    font-family:'Work Sans',sans-serif; font-size:12px; font-weight:600;
+    border:1px solid var(--line); background:#fff; border-radius:8px; padding:0 12px; cursor:pointer; white-space:nowrap;
+  }
+  .senha-row button:hover{ background:var(--paper-dim); }
+  .admin-msg{ font-size:12.5px; margin:10px 0 0 0; min-height:16px; }
+  .admin-msg.erro{ color:#B8462F; }
+  .admin-msg.ok{ color:var(--teal); }
+</style>
+</head>
+<body>
+
+<div class="admin-wrap" style="max-width:820px;">
+  <div class="card" id="gateCard">
+    <p class="loading-note">Verificando acesso…</p>
+  </div>
+
+  <form class="card app-hidden" id="adminForm" autocomplete="off">
+    <div class="section-title" style="border:none;">Cadastrar novo usuário</div>
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="fNome" required>
+    </div>
+    <div class="field">
+      <label>Telefone</label>
+      <input type="tel" id="fTelefone" required placeholder="(00) 00000-0000">
+    </div>
+    <div class="field">
+      <label>Login (e-mail válido)</label>
+      <input type="email" id="fEmail" required>
+    </div>
+    <div class="field">
+      <label>Senha inicial</label>
+      <div class="senha-row">
+        <input type="password" id="fSenha" maxlength="6" required placeholder="Gere ou digite 6 caracteres">
+        <button type="button" id="btnVerSenha">👁 Ver</button>
+        <button type="button" id="btnGerarSenha">🎲 Gerar</button>
+      </div>
+      <span class="hint">6 caracteres (letras minúsculas e números). Será enviada por e-mail ao usuário.</span>
+    </div>
+    <p class="admin-msg erro" id="adminError"></p>
+    <p class="admin-msg ok" id="adminOk"></p>
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary" id="btnCadastrar">Cadastrar</button>
+      <button type="button" class="btn btn-ghost" id="btnCancelar">Cancelar</button>
+    </div>
+  </form>
+
+  <div class="card app-hidden" id="listaCard" style="margin-top:18px;">
+    <div class="section-title" style="border:none; display:flex; align-items:center; justify-content:space-between;">
+      <span>Usuários cadastrados<span class="count-pill" id="qtdUsuarios">0</span></span>
+      <button type="button" class="btn btn-ghost" id="btnAtualizarLista" style="padding:6px 14px; font-size:12px;">↻ Atualizar</button>
+    </div>
+    <p class="admin-msg erro" id="listaError"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Criado em</th><th>Último acesso</th><th></th><th style="text-align:center;">Bloqueado</th></tr></thead>
+        <tbody id="listaBody"><tr class="empty-row"><td colspan="7">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- modal: editar usuário -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal" style="width:380px;">
+    <h3>Editar usuário</h3>
+    <div class="field"><label>Nome</label><input type="text" id="eNome"></div>
+    <div class="field"><label>Telefone</label><input type="tel" id="eTelefone"></div>
+    <div class="field"><label>E-mail</label><input type="email" id="eEmail"></div>
+    <p class="admin-msg erro" id="editError"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="editCancel">Cancelar</button>
+      <button class="btn btn-primary" id="editSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: redefinir senha -->
+<div class="modal-overlay" id="senhaOverlay">
+  <div class="modal" style="width:380px;">
+    <h3>Redefinir senha</h3>
+    <p id="senhaNomeAlvo" style="margin-top:-8px;"></p>
+    <div class="field">
+      <label>Nova senha</label>
+      <div class="senha-row">
+        <input type="password" id="rSenha" maxlength="6">
+        <button type="button" id="btnVerSenhaR">👁 Ver</button>
+        <button type="button" id="btnGerarSenhaR">🎲 Gerar</button>
+      </div>
+    </div>
+    <p class="admin-msg erro" id="senhaError"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="senhaCancel">Cancelar</button>
+      <button class="btn btn-primary" id="senhaSalvar">Enviar nova senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: confirmar exclusão -->
+<div class="modal-overlay" id="delOverlay">
+  <div class="modal">
+    <h3>Excluir usuário</h3>
+    <p id="delNomeAlvo">Tem certeza que deseja excluir este usuário? Essa ação não pode ser desfeita.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="delCancel">Cancelar</button>
+      <button class="btn btn-primary" id="delConfirm" style="background:#B8462F;">Sim, excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="adminToast"></div>
+
+<script>
+const supa = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+const gateCard = document.getElementById('gateCard');
+const form = document.getElementById('adminForm');
+
+function gerarSenhaAleatoria() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+let toastTimer = null;
+function showAdminToast(msg) {
+  const el = document.getElementById('adminToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+(async function checarAcesso() {
+  const { data } = await supa.auth.getSession();
+  if (!data.session) {
+    gateCard.innerHTML = `<p class="loading-note">Você precisa estar logado como administrador para acessar esta página. <a href="/">Ir para o login</a></p>`;
+    return;
+  }
+  // A verificação de fato (é admin ou não) acontece no servidor a cada
+  // chamada da API; aqui só liberamos a tela para quem já está logado.
+  gateCard.classList.add('app-hidden');
+  form.classList.remove('app-hidden');
+  document.getElementById('listaCard').classList.remove('app-hidden');
+  document.getElementById('fSenha').value = gerarSenhaAleatoria();
+  carregarUsuarios();
+})();
+
+async function tokenAtual() {
+  const { data } = await supa.auth.getSession();
+  return data.session?.access_token;
+}
+
+function fmtData(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+let usuariosCache = [];
+
+async function carregarUsuarios() {
+  const body = document.getElementById('listaBody');
+  const errEl = document.getElementById('listaError');
+  errEl.textContent = '';
+  body.innerHTML = `<tr class="empty-row"><td colspan="7">Carregando…</td></tr>`;
+  try {
+    const token = await tokenAtual();
+    const res = await fetch('/api/admin/usuarios', { headers: { 'Authorization': 'Bearer ' + token } });
+    const result = await res.json();
+    if (!res.ok) { errEl.textContent = result.erro || 'Erro ao carregar usuários.'; body.innerHTML = ''; return; }
+    usuariosCache = result;
+    document.getElementById('qtdUsuarios').textContent = result.length;
+    if (!result.length) {
+      body.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhum usuário cadastrado ainda.</td></tr>`;
+      return;
+    }
+    body.innerHTML = result.map(u => `
+      <tr>
+        <td>${u.nome || '<em style="color:#A79A82;">—</em>'}${u.bloqueado ? ' <span style="color:#B8462F; font-size:10.5px; font-weight:700; border:1px solid #D9B9AC; border-radius:6px; padding:1px 6px;">BLOQUEADO</span>' : ''}</td>
+        <td>${u.telefone || '—'}</td>
+        <td>${u.email}</td>
+        <td>${fmtData(u.criado_em)}</td>
+        <td>${fmtData(u.ultimo_acesso)}</td>
+        <td style="white-space:nowrap;">
+          <button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11.5px;" data-editar="${u.id}">Editar</button>
+          <button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11.5px;" data-senha="${u.id}">Senha</button>
+          <button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11.5px; color:#B8462F; border-color:#D9B9AC;" data-excluir="${u.id}">Excluir</button>
+        </td>
+        <td style="text-align:center;">
+          <input type="checkbox" data-bloquear="${u.id}" ${u.bloqueado ? 'checked' : ''} title="${u.bloqueado ? 'Usuário bloqueado' : 'Usuário liberado'}" style="width:16px; height:16px; cursor:pointer;">
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    errEl.textContent = 'Não foi possível conectar ao servidor.';
+    body.innerHTML = '';
+  }
+}
+
+document.getElementById('btnAtualizarLista').addEventListener('click', carregarUsuarios);
+
+/* ---------- editar ---------- */
+const editOverlay = document.getElementById('editOverlay');
+let editandoId = null;
+
+document.getElementById('listaBody').addEventListener('click', (e) => {
+  const btnEditar = e.target.closest('[data-editar]');
+  const btnSenha = e.target.closest('[data-senha]');
+  const btnExcluir = e.target.closest('[data-excluir]');
+  const chkBloquear = e.target.closest('[data-bloquear]');
+
+  if (btnEditar) {
+    const u = usuariosCache.find(x => x.id === btnEditar.dataset.editar);
+    if (!u) return;
+    editandoId = u.id;
+    document.getElementById('eNome').value = u.nome || '';
+    document.getElementById('eTelefone').value = u.telefone || '';
+    document.getElementById('eEmail').value = u.email || '';
+    document.getElementById('editError').textContent = '';
+    editOverlay.classList.add('open');
+  }
+  if (btnSenha) {
+    const u = usuariosCache.find(x => x.id === btnSenha.dataset.senha);
+    if (!u) return;
+    senhaAlvoId = u.id;
+    document.getElementById('senhaNomeAlvo').textContent = `${u.nome || u.email} (${u.email})`;
+    document.getElementById('rSenha').value = gerarSenhaAleatoria();
+    document.getElementById('rSenha').type = 'password';
+    document.getElementById('btnVerSenhaR').textContent = '👁 Ver';
+    document.getElementById('senhaError').textContent = '';
+    senhaOverlay.classList.add('open');
+  }
+  if (btnExcluir) {
+    const u = usuariosCache.find(x => x.id === btnExcluir.dataset.excluir);
+    if (!u) return;
+    excluirAlvoId = u.id;
+    document.getElementById('delNomeAlvo').textContent = `Tem certeza que deseja excluir "${u.nome || u.email}"? Essa ação não pode ser desfeita.`;
+    delOverlay.classList.add('open');
+  }
+  if (chkBloquear) {
+    const alvoId = chkBloquear.dataset.bloquear;
+    const bloquear = chkBloquear.checked;
+    chkBloquear.disabled = true;
+    (async () => {
+      try {
+        const token = await tokenAtual();
+        const res = await fetch('/api/admin/usuarios/' + alvoId + '/bloqueio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ bloqueado: bloquear })
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          alert(result.erro || 'Erro ao alterar bloqueio.');
+          chkBloquear.checked = !bloquear; // desfaz visualmente
+          return;
+        }
+        chkBloquear.title = bloquear ? 'Usuário bloqueado' : 'Usuário liberado';
+        showAdminToast(bloquear ? 'Usuário bloqueado. Ele não conseguirá mais entrar no sistema.' : 'Usuário liberado.');
+      } catch (err) {
+        alert('Não foi possível conectar ao servidor.');
+        chkBloquear.checked = !bloquear;
+      } finally {
+        chkBloquear.disabled = false;
+      }
+    })();
+  }
+});
+
+document.getElementById('editCancel').addEventListener('click', () => editOverlay.classList.remove('open'));
+document.getElementById('editSalvar').addEventListener('click', async () => {
+  const errEl = document.getElementById('editError');
+  errEl.textContent = '';
+  const nome = document.getElementById('eNome').value.trim();
+  const telefone = document.getElementById('eTelefone').value.trim();
+  const email = document.getElementById('eEmail').value.trim();
+  if (!nome || !telefone || !email) { errEl.textContent = 'Preencha todos os campos.'; return; }
+  try {
+    const token = await tokenAtual();
+    const res = await fetch('/api/admin/usuarios/' + editandoId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ nome, telefone, email })
+    });
+    const result = await res.json();
+    if (!res.ok) { errEl.textContent = result.erro || 'Erro ao salvar.'; return; }
+    editOverlay.classList.remove('open');
+    carregarUsuarios();
+  } catch (err) { errEl.textContent = 'Não foi possível conectar ao servidor.'; }
+});
+
+/* ---------- redefinir senha ---------- */
+const senhaOverlay = document.getElementById('senhaOverlay');
+let senhaAlvoId = null;
+
+document.getElementById('btnGerarSenhaR').addEventListener('click', () => {
+  document.getElementById('rSenha').value = gerarSenhaAleatoria();
+});
+document.getElementById('btnVerSenhaR').addEventListener('click', (e) => {
+  const input = document.getElementById('rSenha');
+  const oculto = input.type === 'password';
+  input.type = oculto ? 'text' : 'password';
+  e.target.textContent = oculto ? '🙈 Ocultar' : '👁 Ver';
+});
+document.getElementById('senhaCancel').addEventListener('click', () => senhaOverlay.classList.remove('open'));
+document.getElementById('senhaSalvar').addEventListener('click', async () => {
+  const errEl = document.getElementById('senhaError');
+  errEl.textContent = '';
+  const senha = document.getElementById('rSenha').value.trim();
+  if (senha.length !== 6) { errEl.textContent = 'A senha deve ter exatamente 6 caracteres.'; return; }
+  try {
+    const token = await tokenAtual();
+    const res = await fetch('/api/admin/usuarios/' + senhaAlvoId + '/redefinir-senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ senha })
+    });
+    const result = await res.json();
+    if (!res.ok) { errEl.textContent = result.erro || 'Erro ao redefinir senha.'; return; }
+    senhaOverlay.classList.remove('open');
+  } catch (err) { errEl.textContent = 'Não foi possível conectar ao servidor.'; }
+});
+
+/* ---------- excluir ---------- */
+const delOverlay = document.getElementById('delOverlay');
+let excluirAlvoId = null;
+
+document.getElementById('delCancel').addEventListener('click', () => delOverlay.classList.remove('open'));
+document.getElementById('delConfirm').addEventListener('click', async () => {
+  try {
+    const token = await tokenAtual();
+    const res = await fetch('/api/admin/usuarios/' + excluirAlvoId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const result = await res.json();
+    delOverlay.classList.remove('open');
+    if (!res.ok) { alert(result.erro || 'Erro ao excluir usuário.'); return; }
+    carregarUsuarios();
+  } catch (err) {
+    delOverlay.classList.remove('open');
+    alert('Não foi possível conectar ao servidor.');
+  }
+});
+
+document.getElementById('btnGerarSenha').addEventListener('click', () => {
+  document.getElementById('fSenha').value = gerarSenhaAleatoria();
+});
+
+document.getElementById('btnVerSenha').addEventListener('click', (e) => {
+  const input = document.getElementById('fSenha');
+  const oculto = input.type === 'password';
+  input.type = oculto ? 'text' : 'password';
+  e.target.textContent = oculto ? '🙈 Ocultar' : '👁 Ver';
+});
+
+document.getElementById('btnCancelar').addEventListener('click', () => {
+  form.reset();
+  document.getElementById('fSenha').value = gerarSenhaAleatoria();
+  document.getElementById('adminError').textContent = '';
+  document.getElementById('adminOk').textContent = '';
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('adminError');
+  const okEl = document.getElementById('adminOk');
+  errEl.textContent = ''; okEl.textContent = '';
+
+  const nome = document.getElementById('fNome').value.trim();
+  const telefone = document.getElementById('fTelefone').value.trim();
+  const email = document.getElementById('fEmail').value.trim();
+  const senha = document.getElementById('fSenha').value.trim();
+
+  if (senha.length !== 6) { errEl.textContent = 'A senha deve ter exatamente 6 caracteres.'; return; }
+
+  const btn = document.getElementById('btnCadastrar');
+  btn.disabled = true; btn.textContent = 'Cadastrando…';
+
+  try {
+    const { data: sessionData } = await supa.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const res = await fetch('/api/admin/criar-usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ nome, telefone, email, senha })
+    });
+    const result = await res.json();
+    if (!res.ok) { errEl.textContent = result.erro || 'Erro ao cadastrar usuário.'; return; }
+    okEl.textContent = result.emailEnviado
+      ? `Usuário cadastrado! A senha inicial foi enviada para ${email}.`
+      : `Usuário cadastrado, mas o e-mail não pôde ser enviado (verifique a configuração de SMTP no servidor). Senha inicial: ${senha}`;
+    form.reset();
+    document.getElementById('fSenha').value = gerarSenhaAleatoria();
+    carregarUsuarios();
+  } catch (err) {
+    errEl.textContent = 'Não foi possível conectar ao servidor.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Cadastrar';
+  }
+});
+
+/* ---------- ESC fecha qualquer pop-up aberto ---------- */
+const ESC_OVERLAYS_ADMIN = [
+  { overlay: 'editOverlay', cancel: 'editCancel' },
+  { overlay: 'senhaOverlay', cancel: 'senhaCancel' },
+  { overlay: 'delOverlay', cancel: 'delCancel' }
+];
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  ESC_OVERLAYS_ADMIN.forEach(({ overlay, cancel }) => {
+    const ov = document.getElementById(overlay);
+    if (!ov || !ov.classList.contains('open')) return;
+    const cancelBtn = document.getElementById(cancel);
+    if (cancelBtn) cancelBtn.click(); else ov.classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>

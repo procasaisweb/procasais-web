@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procasais Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="rosette"></div>
+    <h1>Procasais Web</h1>
+    <p class="sub">Sistema multiusuário — módulo Cadastros</p>
+
+    <form id="loginForm">
+      <div class="field"><label>E-mail</label><input type="email" id="loginUser" autocomplete="username" required></div>
+      <div class="field"><label>Senha</label><input type="password" id="loginPass" autocomplete="current-password" required></div>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+      <p class="login-error" id="loginError"></p>
+    </form>
+
+    <form id="resetForm" class="app-hidden">
+      <div class="field"><label>E-mail</label><input type="email" id="resetEmail" autocomplete="username" required></div>
+      <button type="submit" class="btn btn-primary">Enviar link de redefinição</button>
+      <p class="login-error" id="resetError"></p>
+      <p class="login-error" id="resetOk" style="color:var(--teal);"></p>
+    </form>
+
+    <p class="switch-auth">
+      <a href="#" id="linkToReset">Esqueci minha senha</a>
+      <a href="#" id="linkToLogin" class="app-hidden">Voltar para o login</a>
+    </p>
+  </div>
+</div>
+
+<div class="app app-hidden" id="appRoot">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="topbar app-hidden" id="topbar">
+  <span id="topbarUser"></span>
+  <button type="button" id="btnLogout">Sair</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Confirmar salvamento</h3>
+    <p>Deseja salvar este registro?</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="modalCancel">Cancelar</button>
+      <button class="btn btn-primary" id="modalConfirm">Sim, salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmDeleteOverlay">
+  <div class="modal">
+    <h3>Confirmar exclusão</h3>
+    <p>Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="deleteCancel">Cancelar</button>
+      <button class="btn btn-primary" id="deleteConfirm" style="background:#B8462F;">Sim, excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="funcPopupOverlay">
+  <div class="modal" style="width:440px;">
+    <h3>Editar registro de Função</h3>
+    <div id="funcPopupBody"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="funcPopupCancel">Cancelar</button>
+      <button class="btn btn-primary" id="funcPopupSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="agendaPopupOverlay">
+  <div class="modal" style="width:440px;">
+    <h3>Compromissos</h3>
+    <div id="agendaPopupBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="caixaPopupOverlay">
+  <div class="modal" style="width:420px;">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h3 id="caixaPopupTitle" style="margin:0;">Novo Lançamento</h3>
+      <button type="button" id="caixaPopupFechar" aria-label="Fechar" style="background:none; border:none; font-size:18px; line-height:1; cursor:pointer; color:#8A7C64; padding:2px 6px;">✕</button>
+    </div>
+    <div id="caixaPopupBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="painelEditOverlay">
+  <div class="modal" style="width:460px;">
+    <h3 id="painelEditTitle">Editar</h3>
+    <div id="painelEditBody"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="painelEditCancel">Cancelar</button>
+      <button class="btn btn-primary" id="painelEditSalvar">Alterar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Registro salvo com sucesso.</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
