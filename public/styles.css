@@ -151,6 +151,7 @@
     font-size:12px; font-weight:600; color:#5A4E3F; letter-spacing:0.2px;
   }
   .field .hint{ font-size:10.5px; color:#9A8C74; font-weight:400; }
+  .req-mark{ color:#B8462F; font-weight:700; }
   input[type=text], input[type=date], select{
     font-family:'Work Sans', sans-serif;
     font-size:13.5px;

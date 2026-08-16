@@ -230,8 +230,8 @@ function renderSidebar() {
 function fieldText(key, label, opts = {}) {
   const val = formState[key] ?? opts.value ?? '';
   return `<div class="field ${opts.full ? 'full' : ''}">
-    <label>${label}</label>
-    <input type="${opts.type || 'text'}" name="${key}" value="${val ?? ''}" ${opts.readonly ? 'readonly' : ''} ${opts.disabled ? 'disabled' : ''}>
+    <label>${label}${opts.required ? ' <span class="req-mark">*</span>' : ''}</label>
+    <input type="${opts.type || 'text'}" name="${key}" value="${val ?? ''}" ${opts.required ? 'required' : ''} ${opts.readonly ? 'readonly' : ''} ${opts.disabled ? 'disabled' : ''}>
     ${opts.hint ? `<span class="hint">${opts.hint}</span>` : ''}
   </div>`;
 }
@@ -243,8 +243,8 @@ function fieldSelect(key, label, options, opts = {}) {
     return `<option value="${v}" ${val === v ? 'selected' : ''}>${l}</option>`;
   }).join('');
   return `<div class="field ${opts.full ? 'full' : ''}" >
-    <label>${label}</label>
-    <select name="${key}" ${opts.disabled ? 'disabled' : ''}>
+    <label>${label}${opts.required ? ' <span class="req-mark">*</span>' : ''}</label>
+    <select name="${key}" ${opts.required ? 'required' : ''} ${opts.disabled ? 'disabled' : ''}>
       <option value="">Selecione...</option>${optsHtml}
     </select>
     ${opts.hint ? `<span class="hint">${opts.hint}</span>` : ''}
@@ -266,19 +266,19 @@ function calcAnosCasados(dataStr) {
 /* ---------- config das telas simples (Sacerdotes, Jovens, Viúvos, Círculos, Habilidades) ---------- */
 const SIMPLE_CONFIG = {
   sacerdotes: { title: 'Cadastro de Sacerdotes',
-    fields: [['nome','Nome',true],['endereco','Endereço',true],['telefone','Telefone',false],['email','E-mail',false]],
+    fields: [['nome','Nome',true,true],['endereco','Endereço',true,false],['telefone','Telefone',false,false],['email','E-mail',false,false]],
     columns: [['nome','Nome'],['endereco','Endereço'],['telefone','Telefone'],['email','E-mail']] },
   jovens: { title: 'Cadastro de Jovens',
-    fields: [['nome','Nome',true],['endereco','Endereço',true],['telefone','Telefone',false],['email','E-mail',false]],
+    fields: [['nome','Nome',true,true],['endereco','Endereço',true,false],['telefone','Telefone',false,false],['email','E-mail',false,false]],
     columns: [['nome','Nome'],['endereco','Endereço'],['telefone','Telefone'],['email','E-mail']] },
   viuvos: { title: 'Cadastro de Viúvos',
-    fields: [['nome','Nome',true],['endereco','Endereço',true],['telefone','Telefone',false],['email','E-mail',false]],
+    fields: [['nome','Nome',true,true],['endereco','Endereço',true,false],['telefone','Telefone',false,false],['email','E-mail',false,false]],
     columns: [['nome','Nome'],['endereco','Endereço'],['telefone','Telefone'],['email','E-mail']] },
   circulos: { title: 'Cadastro Cor do Círculo',
-    fields: [['cor','Digite a Cor do Círculo',true]],
+    fields: [['cor','Digite a Cor do Círculo',true,true]],
     columns: [['cor','Cor']] },
   habilidades: { title: 'Cadastro de Habilidades',
-    fields: [['nome','Digite a Habilidade',true]],
+    fields: [['nome','Digite a Habilidade',true,true]],
     columns: [['nome','Habilidade']] }
 };
 
@@ -350,7 +350,7 @@ function bindSidebarEvents() {
 async function renderSimpleScreen(tabela) {
   const cfg = SIMPLE_CONFIG[tabela];
   const registros = await api(`/${tabela}`);
-  const fieldsHtml = cfg.fields.map(([key, label, full]) => fieldText(key, label, { full })).join('');
+  const fieldsHtml = cfg.fields.map(([key, label, full, required]) => fieldText(key, label, { full, required })).join('');
   return `
     <p class="eyebrow">Cadastros</p>
     <h2 class="page-title">${cfg.title}${editingId ? ' <span style="font-size:14px;color:var(--teal);">— editando registro</span>' : ''}</h2>
@@ -380,20 +380,20 @@ async function renderDioceseParoquia(tabela) {
   }
 
   const fieldsHtml = isDiocese ? `
-      ${fieldText('nome','Nome da Diocese', { full:true })}
-      ${fieldText('bispo','Bispo Atual')}
-      ${fieldText('endereco','Endereço',{full:true})}
-      ${fieldText('cidade','Cidade')}
-      ${fieldText('estado','Estado')}
+      ${fieldText('nome','Nome da Diocese', { full:true, required:true })}
+      ${fieldText('bispo','Bispo Atual', { required:true })}
+      ${fieldText('endereco','Endereço',{full:true, required:true})}
+      ${fieldText('cidade','Cidade', { required:true })}
+      ${fieldText('estado','Estado', { required:true })}
       ${fieldText('telefone','Telefone')}
       ${fieldText('email','E-mail')}
     ` : `
-      ${fieldText('nome','Nome da Paróquia')}
-      ${fieldText('diocese','Nome da Diocese')}
-      ${fieldText('endereco','Endereço',{full:true})}
-      ${fieldText('cidade','Cidade')}
-      ${fieldText('estado','Estado')}
-      ${fieldText('paroco','Pároco Atual')}
+      ${fieldText('nome','Nome da Paróquia', { required:true })}
+      ${fieldText('diocese','Nome da Diocese', { required:true })}
+      ${fieldText('endereco','Endereço',{full:true, required:true})}
+      ${fieldText('cidade','Cidade', { required:true })}
+      ${fieldText('estado','Estado', { required:true })}
+      ${fieldText('paroco','Pároco Atual', { required:true })}
       ${fieldText('telefone','Telefone')}
       ${fieldText('email','E-mail')}
     `;
@@ -428,12 +428,12 @@ async function renderFuncoes() {
     <h2 class="page-title">Cadastro de Funções${editingId ? ' <span style="font-size:14px;color:var(--teal);">— editando registro</span>' : ''}</h2>
     <form id="mainForm" class="card" data-tabela="funcoes" autocomplete="off">
       <div class="grid">
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean))}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, hint: 'Autopreenchido conforme "Apelido Ele"' })}
-        ${fieldSelect('equipe','Equipe', EQUIPES_LIST)}
-        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS)}
-        ${fieldSelect('etapa','Etapa', ETAPAS)}
-        ${fieldSelect('coordenou','Coordenou?', ['Sim','Não'])}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { required:true })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('equipe','Equipe', EQUIPES_LIST, { required:true })}
+        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS, { required:true })}
+        ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
+        ${fieldSelect('coordenou','Coordenou?', ['Sim','Não'], { required:true })}
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-primary" id="btnSave">${editingId ? 'Salvar' : 'Salvar / Incluir'}</button>
@@ -457,11 +457,11 @@ async function renderDirigentes() {
     <h2 class="page-title">Cadastro de Dirigentes${editingId ? ' <span style="font-size:14px;color:var(--teal);">— editando registro</span>' : ''}</h2>
     <form id="mainForm" class="card" data-tabela="dirigentes" autocomplete="off">
       <div class="grid">
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean))}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, hint: 'Autopreenchido conforme "Apelido Ele"' })}
-        ${fieldSelect('funcao_dirigente','Função Dirigente', funcoesOpts)}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { required:true })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('funcao_dirigente','Função Dirigente', funcoesOpts, { required:true })}
         ${fieldText('periodo','Período')}
-        ${fieldSelect('etapa','Etapa', ETAPAS)}
+        ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-primary" id="btnSave">${editingId ? 'Salvar' : 'Salvar / Incluir'}</button>
@@ -493,12 +493,12 @@ async function renderPalestras() {
         <button type="button" class="${tipo === 'Sacerdote' ? 'active' : ''}" data-toggleval="Sacerdote">Sacerdote</button>
       </div>
       <div class="grid">
-        ${fieldSelect('sacerdote','Nome do Sacerdote', sacerdotes.map(s => s.nome), { disabled: tipo !== 'Sacerdote' })}
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal' })}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"' })}
-        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS)}
-        ${fieldSelect('etapa','Etapa', ETAPAS)}
-        ${fieldSelect('palestra','Palestra Proferida', catalogo.map(p => p.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)' })}
+        ${fieldSelect('sacerdote','Nome do Sacerdote', sacerdotes.map(s => s.nome), { disabled: tipo !== 'Sacerdote', required:true })}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required:true })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS, { required:true })}
+        ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
+        ${fieldSelect('palestra','Palestra Proferida', catalogo.map(p => p.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)', required:true })}
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-primary" id="btnSave">${editingId ? 'Salvar' : 'Salvar / Incluir'}</button>
@@ -531,13 +531,13 @@ async function renderTestemunhos() {
         <button type="button" class="${tipo === 'Viuvo' ? 'active' : ''}" data-toggleval="Viuvo">Viúvo</button>
       </div>
       <div class="grid">
-        ${fieldSelect('jovem','Nome do Jovem', jovens.map(j => j.nome), { disabled: tipo !== 'Jovem' })}
-        ${fieldSelect('viuvo','Nome do Viúvo(a)', viuvos.map(v => v.nome), { disabled: tipo !== 'Viuvo' })}
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal' })}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"' })}
-        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS)}
-        ${fieldSelect('etapa','Etapa', ETAPAS)}
-        ${fieldSelect('testemunho','Testemunho Proferido', catalogo.map(t => t.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)' })}
+        ${fieldSelect('jovem','Nome do Jovem', jovens.map(j => j.nome), { disabled: tipo !== 'Jovem', required:true })}
+        ${fieldSelect('viuvo','Nome do Viúvo(a)', viuvos.map(v => v.nome), { disabled: tipo !== 'Viuvo', required:true })}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required:true })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS, { required:true })}
+        ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
+        ${fieldSelect('testemunho','Testemunho Proferido', catalogo.map(t => t.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)', required:true })}
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-primary" id="btnSave">${editingId ? 'Salvar' : 'Salvar / Incluir'}</button>
@@ -553,12 +553,13 @@ async function renderTestemunhos() {
 /* ---------- Casais ---------- */
 function vivenciaBlock(n, circulos) {
   const etapaLabel = n === 1 ? '1ª' : n === 2 ? '2ª' : '3ª';
+  const req = n === 1; // só a Vivência da 1ª Etapa tem Encontro/Data/Local obrigatórios
   return `<div class="vivencia-block">
     <div class="vb-title">Vivência — ${etapaLabel} Etapa</div>
     <div class="grid">
-      ${fieldSelect('encontro' + n, 'Encontro (nº)', ENCONTRO_OPTS)}
-      ${fieldText('data' + n, 'Data', { type: 'date' })}
-      ${fieldText('local' + n, 'Local')}
+      ${fieldSelect('encontro' + n, 'Encontro (nº)', ENCONTRO_OPTS, { required: req })}
+      ${fieldText('data' + n, 'Data', { type: 'date', required: req })}
+      ${fieldText('local' + n, 'Local', { required: req })}
       ${fieldSelect('circulo' + n, 'Cor do Círculo', circulos.map(c => c.cor))}
       ${fieldText('coordenadores' + n, 'Coordenadores', { full: true })}
     </div>
@@ -583,20 +584,20 @@ async function renderCasais() {
         ${fieldText('diocese','Diocese', { readonly: true, hint: 'Vem do Cadastro de Diocese' })}
         ${fieldText('cidade_sede','Cidade Sede', { readonly: true, hint: 'Vem do Cadastro de Diocese' })}
         ${fieldText('paroquia','Paróquia', { readonly: true, hint: 'Vem do Cadastro de Paróquia' })}
-        ${fieldText('nome_esposo','Nome do Esposo')}
-        ${fieldText('apelido_esposo','Apelido do Esposo')}
-        ${fieldText('nasc_esposo','Data de Nascimento', { type: 'date' })}
-        ${fieldText('celular_esposo','Celular')}
+        ${fieldText('nome_esposo','Nome do Esposo', { required:true })}
+        ${fieldText('apelido_esposo','Apelido do Esposo', { required:true })}
+        ${fieldText('nasc_esposo','Data de Nascimento', { type: 'date', required:true })}
+        ${fieldText('celular_esposo','Celular', { required:true })}
         ${fieldText('profissao_esposo','Profissão')}
         ${fieldText('email_esposo','E-mail')}
-        ${fieldText('nome_esposa','Nome da Esposa')}
-        ${fieldText('apelido_esposa','Apelido da Esposa')}
-        ${fieldText('nasc_esposa','Data de Nascimento', { type: 'date' })}
-        ${fieldText('celular_esposa','Celular')}
+        ${fieldText('nome_esposa','Nome da Esposa', { required:true })}
+        ${fieldText('apelido_esposa','Apelido da Esposa', { required:true })}
+        ${fieldText('nasc_esposa','Data de Nascimento', { type: 'date', required:true })}
+        ${fieldText('celular_esposa','Celular', { required:true })}
         ${fieldText('profissao_esposa','Profissão')}
         ${fieldText('email_esposa','E-mail')}
         ${fieldText('tel_proximo','Telefone de Contato Próximo')}
-        ${fieldText('casamento_data','Aniversário de Casamento', { type: 'date' })}
+        ${fieldText('casamento_data','Aniversário de Casamento', { type: 'date', required:true })}
         ${fieldText('casados_a','Casados a', { readonly: true, hint: 'Calculado automaticamente' })}
         ${fieldSelect('situacao','Situação', ['Casados','Separados','Viúvo(a)','Outra Paróquia','Desistentes','Mudaram-se'])}
         ${fieldSelect('habilidade','Habilidades', habilidades.map(h => h.nome))}
@@ -604,10 +605,10 @@ async function renderCasais() {
       <div class="section-title" style="margin-top:22px;">Endereço</div>
       <div class="grid">
         ${fieldText('cep','CEP', { hint: 'Busca automática do endereço via API ao sair do campo' })}
-        ${fieldText('endereco_residencial','Endereço Residencial')}
-        ${fieldText('bairro','Bairro')}
-        ${fieldText('cidade','Cidade')}
-        ${fieldText('estado','Estado')}
+        ${fieldText('endereco_residencial','Endereço Residencial', { required:true })}
+        ${fieldText('bairro','Bairro', { required:true })}
+        ${fieldText('cidade','Cidade', { required:true })}
+        ${fieldText('estado','Estado', { required:true })}
       </div>
       <div class="section-title" style="margin-top:22px;">Vivência</div>
       ${vivenciaBlock(1, circulos)}
@@ -1299,22 +1300,22 @@ function renderRecibo() {
   return `
     <p class="eyebrow">Utilidades</p>
     <h2 class="page-title">Recibo de Pagamento</h2>
-    <div class="card">
+    <form id="reciboForm" class="card" autocomplete="off">
       <div class="grid">
-        <div class="field"><label>Valor R$</label><input type="text" id="recValor" value="${formState.recValor || ''}" placeholder="R$ 0,00"></div>
-        <div class="field"><label>Valor por Extenso</label><input type="text" id="recExtenso" value="${formState.recExtenso || ''}" readonly></div>
-        <div class="field"><label>Pagador (CPF/CNPJ)</label><input type="text" id="recPagador" value="${formState.recPagador || ''}" placeholder="000.000.000-00"></div>
-        <div class="field"><label>Recebedor (CPF/CNPJ)</label><input type="text" id="recRecebedor" value="${formState.recRecebedor || ''}" placeholder="000.000.000-00"></div>
-        <div class="field"><label>Nome</label><input type="text" id="recPagadorNome" value="${formState.recPagadorNome || ''}" placeholder="Nome do pagador"></div>
-        <div class="field"><label>Nome</label><input type="text" id="recRecebedorNome" value="${recebedorNomeVal}" placeholder="Nome do recebedor"></div>
-        <div class="field full"><label>Referente a</label><textarea id="recReferente" rows="3">${formState.recReferente || ''}</textarea></div>
+        <div class="field"><label>Valor R$ <span class="req-mark">*</span></label><input type="text" id="recValor" value="${formState.recValor || ''}" placeholder="R$ 0,00" required></div>
+        <div class="field"><label>Valor por Extenso <span class="req-mark">*</span></label><input type="text" id="recExtenso" value="${formState.recExtenso || ''}" readonly required></div>
+        <div class="field"><label>Pagador (CPF/CNPJ) <span class="req-mark">*</span></label><input type="text" id="recPagador" value="${formState.recPagador || ''}" placeholder="000.000.000-00" required></div>
+        <div class="field"><label>Recebedor (CPF/CNPJ) <span class="req-mark">*</span></label><input type="text" id="recRecebedor" value="${formState.recRecebedor || ''}" placeholder="000.000.000-00" required></div>
+        <div class="field"><label>Nome <span class="req-mark">*</span></label><input type="text" id="recPagadorNome" value="${formState.recPagadorNome || ''}" placeholder="Nome do pagador" required></div>
+        <div class="field"><label>Nome <span class="req-mark">*</span></label><input type="text" id="recRecebedorNome" value="${recebedorNomeVal}" placeholder="Nome do recebedor" required></div>
+        <div class="field full"><label>Referente a <span class="req-mark">*</span></label><textarea id="recReferente" rows="3" required>${formState.recReferente || ''}</textarea></div>
         <div class="field"><label>Data</label><input type="text" value="${hoje}" readonly></div>
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-ghost" id="btnLimparRecibo">Limpar</button>
         <button type="button" class="btn btn-primary" id="btnGerarReciboPdf">⭳ Gerar PDF</button>
       </div>
-    </div>`;
+    </form>`;
 }
 function bindReciboEvents() {
   const valorEl = document.getElementById('recValor');
@@ -1342,6 +1343,8 @@ function bindReciboEvents() {
   document.getElementById('recReferente').addEventListener('input', (e) => { formState.recReferente = e.target.value; });
   document.getElementById('btnLimparRecibo').addEventListener('click', () => { formState = {}; renderMain(); showToast('Formulário limpo.'); });
   document.getElementById('btnGerarReciboPdf').addEventListener('click', () => {
+    const form = document.getElementById('reciboForm');
+    if (!form.reportValidity()) return;
     const win = window.open('', '_blank');
     const hoje = new Date().toLocaleDateString('pt-BR');
     const pagadorNome = formState.recPagadorNome || '____________________';
@@ -1453,20 +1456,23 @@ async function renderAgendaPopupBody() {
   } else {
     const e = agendaState.editing || { nome: '', descricao: '', data_inicial: iso, hora_inicial: '', data_final: iso, hora_final: '' };
     body.innerHTML = `
-      <div class="field full"><label>Nome do Evento</label><input type="text" id="agNome" value="${e.nome || ''}"></div>
-      <div class="field full"><label>Descrição do Evento</label><textarea id="agDesc" rows="2">${e.descricao || ''}</textarea></div>
+      <form id="agendaForm" autocomplete="off">
+      <div class="field full"><label>Nome do Evento <span class="req-mark">*</span></label><input type="text" id="agNome" value="${e.nome || ''}" required></div>
+      <div class="field full"><label>Descrição do Evento <span class="req-mark">*</span></label><textarea id="agDesc" rows="2" required>${e.descricao || ''}</textarea></div>
       <div class="grid">
-        <div class="field"><label>Data Inicial</label><input type="date" id="agDataIni" value="${e.data_inicial || ''}"></div>
-        <div class="field"><label>Hora Inicial</label><input type="time" id="agHoraIni" value="${e.hora_inicial || ''}"></div>
-        <div class="field"><label>Data Final</label><input type="date" id="agDataFim" value="${e.data_final || ''}"></div>
-        <div class="field"><label>Hora Final</label><input type="time" id="agHoraFim" value="${e.hora_final || ''}"></div>
+        <div class="field"><label>Data Inicial <span class="req-mark">*</span></label><input type="date" id="agDataIni" value="${e.data_inicial || ''}" required></div>
+        <div class="field"><label>Hora Inicial <span class="req-mark">*</span></label><input type="time" id="agHoraIni" value="${e.hora_inicial || ''}" required></div>
+        <div class="field"><label>Data Final <span class="req-mark">*</span></label><input type="date" id="agDataFim" value="${e.data_final || ''}" required></div>
+        <div class="field"><label>Hora Final <span class="req-mark">*</span></label><input type="time" id="agHoraFim" value="${e.hora_final || ''}" required></div>
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-ghost" id="agendaCancelForm">Cancelar</button>
         <button type="button" class="btn btn-primary" id="agendaSalvar">${agendaState.editing ? 'Salvar' : 'Criar Evento'}</button>
-      </div>`;
+      </div>
+      </form>`;
     document.getElementById('agendaCancelForm').addEventListener('click', () => { agendaState.view = 'list'; renderAgendaPopupBody(); });
     document.getElementById('agendaSalvar').addEventListener('click', async () => {
+      if (!document.getElementById('agendaForm').reportValidity()) return;
       const dados = { nome: val('agNome'), descricao: val('agDesc'), data_inicial: val('agDataIni'), hora_inicial: val('agHoraIni'), data_final: val('agDataFim'), hora_final: val('agHoraFim') };
       try {
         if (agendaState.editing) await api(`/agenda/${agendaState.editing.id}`, { method: 'PUT', body: JSON.stringify(dados) });
@@ -1561,16 +1567,18 @@ async function openCaixaPopup(editingId2) {
   const r = editingId2 != null ? await api(`/caixa/${editingId2}`) : { tipo: 'Entrada', data: '', descricao: '', valor: '' };
   document.getElementById('caixaPopupTitle').textContent = editingId2 != null ? 'Editar Lançamento' : 'Novo Lançamento';
   document.getElementById('caixaPopupBody').innerHTML = `
+    <form id="caixaForm" autocomplete="off">
     <div class="grid">
-      <div class="field"><label>Tipo</label><select id="cxTipo"><option ${r.tipo === 'Entrada' ? 'selected' : ''}>Entrada</option><option ${r.tipo === 'Saída' ? 'selected' : ''}>Saída</option></select></div>
-      <div class="field"><label>Data</label><input type="text" id="cxData" value="${isoToBr(r.data)}" placeholder="dd/mm/aaaa" maxlength="10"></div>
-      <div class="field full"><label>Descrição</label><input type="text" id="cxDescricao" value="${r.descricao || ''}"></div>
-      <div class="field"><label>Valor R$</label><input type="text" id="cxValor" value="${r.valor || ''}"></div>
+      <div class="field"><label>Tipo <span class="req-mark">*</span></label><select id="cxTipo" required><option ${r.tipo === 'Entrada' ? 'selected' : ''}>Entrada</option><option ${r.tipo === 'Saída' ? 'selected' : ''}>Saída</option></select></div>
+      <div class="field"><label>Data <span class="req-mark">*</span></label><input type="text" id="cxData" value="${isoToBr(r.data)}" placeholder="dd/mm/aaaa" maxlength="10" required></div>
+      <div class="field full"><label>Descrição <span class="req-mark">*</span></label><input type="text" id="cxDescricao" value="${r.descricao || ''}" required></div>
+      <div class="field"><label>Valor R$ <span class="req-mark">*</span></label><input type="text" id="cxValor" value="${r.valor || ''}" required></div>
     </div>
     <div class="btn-row">
       <button type="button" class="btn btn-ghost" id="cxCancelar">${editingId2 != null ? 'Cancelar' : 'Limpar'}</button>
       <button type="button" class="btn btn-primary" id="cxSalvar">Salvar</button>
-    </div>`;
+    </div>
+    </form>`;
   document.getElementById('caixaPopupOverlay').classList.add('open');
   document.getElementById('caixaPopupFechar').onclick = () => {
     document.getElementById('caixaPopupOverlay').classList.remove('open');
@@ -1581,6 +1589,7 @@ async function openCaixaPopup(editingId2) {
     else openCaixaPopup(null);
   });
   document.getElementById('cxSalvar').addEventListener('click', async () => {
+    if (!document.getElementById('caixaForm').reportValidity()) return;
     const dados = { tipo: val('cxTipo'), data: brToIso(val('cxData')), descricao: val('cxDescricao'), valor: parseFloat(val('cxValor').toString().replace(',', '.')) || 0 };
     try {
       if (editingId2 != null) await api(`/caixa/${editingId2}`, { method: 'PUT', body: JSON.stringify(dados) });
@@ -1909,6 +1918,7 @@ function bindMainEvents() {
       });
     });
     document.getElementById('btnSave').addEventListener('click', () => {
+      if (!form.reportValidity()) return;
       syncFormValues();
       pendingSave = { tabela: form.dataset.tabela, data: { ...formState } };
       document.getElementById('modalOverlay').classList.add('open');
