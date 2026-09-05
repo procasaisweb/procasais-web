@@ -14,7 +14,7 @@ let editingId = null;      // id do registro em edição (null = novo registro)
 let pendingSave = null;
 let pendingDelete = null;
 
-const ENCONTRO_OPTS = Array.from({length:101}, (_,i)=>String(i));
+const ENCONTRO_OPTS = Array.from({length:200}, (_,i)=>String(i+1));
 const EQUIPES_LIST = ['Geral','Sala','Liturgia','Círculos','Coordenador de Círculos','Cafezinho','Cozinha','Ordem','Visitação','Secretaria','Compras','Acolhida'];
 const ETAPAS = ['1ª','2ª','3ª'];
 const PAGE_SIZE = 50;
