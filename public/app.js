@@ -14,7 +14,7 @@ let editingId = null;      // id do registro em edição (null = novo registro)
 let pendingSave = null;
 let pendingDelete = null;
 
-const ENCONTRO_OPTS = Array.from({length:200}, (_,i)=>String(i+1));
+const ENCONTRO_OPTS = Array.from({length:101}, (_,i)=>String(i));
 const EQUIPES_LIST = ['Geral','Sala','Liturgia','Círculos','Coordenador de Círculos','Cafezinho','Cozinha','Ordem','Visitação','Secretaria','Compras','Acolhida'];
 const ETAPAS = ['1ª','2ª','3ª'];
 const PAGE_SIZE = 50;
@@ -230,8 +230,8 @@ function renderSidebar() {
 function fieldText(key, label, opts = {}) {
   const val = formState[key] ?? opts.value ?? '';
   return `<div class="field ${opts.full ? 'full' : ''}">
-    <label>${label}${opts.required ? ' <span class="req-mark">*</span>' : ''}</label>
-    <input type="${opts.type || 'text'}" name="${key}" value="${val ?? ''}" ${opts.required ? 'required' : ''} ${opts.readonly ? 'readonly' : ''} ${opts.disabled ? 'disabled' : ''}>
+    <label>${label}${opts.required ? ' <span class="req-star" title="Campo obrigatório">*</span>' : ''}</label>
+    <input type="${opts.type || 'text'}" name="${key}" value="${val ?? ''}" ${opts.readonly ? 'readonly' : ''} ${opts.disabled ? 'disabled' : ''} ${opts.required ? 'required' : ''}>
     ${opts.hint ? `<span class="hint">${opts.hint}</span>` : ''}
   </div>`;
 }
@@ -243,8 +243,8 @@ function fieldSelect(key, label, options, opts = {}) {
     return `<option value="${v}" ${val === v ? 'selected' : ''}>${l}</option>`;
   }).join('');
   return `<div class="field ${opts.full ? 'full' : ''}" >
-    <label>${label}${opts.required ? ' <span class="req-mark">*</span>' : ''}</label>
-    <select name="${key}" ${opts.required ? 'required' : ''} ${opts.disabled ? 'disabled' : ''}>
+    <label>${label}${opts.required ? ' <span class="req-star" title="Campo obrigatório">*</span>' : ''}</label>
+    <select name="${key}" ${opts.disabled ? 'disabled' : ''} ${opts.required ? 'required' : ''}>
       <option value="">Selecione...</option>${optsHtml}
     </select>
     ${opts.hint ? `<span class="hint">${opts.hint}</span>` : ''}
@@ -493,9 +493,9 @@ async function renderPalestras() {
         <button type="button" class="${tipo === 'Sacerdote' ? 'active' : ''}" data-toggleval="Sacerdote">Sacerdote</button>
       </div>
       <div class="grid">
-        ${fieldSelect('sacerdote','Nome do Sacerdote', sacerdotes.map(s => s.nome), { disabled: tipo !== 'Sacerdote', required:true })}
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required:true })}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('sacerdote','Nome do Sacerdote', sacerdotes.map(s => s.nome), { disabled: tipo !== 'Sacerdote', required: tipo === 'Sacerdote' })}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required: tipo === 'Casal' })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required: tipo === 'Casal' })}
         ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS, { required:true })}
         ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
         ${fieldSelect('palestra','Palestra Proferida', catalogo.map(p => p.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)', required:true })}
@@ -531,10 +531,10 @@ async function renderTestemunhos() {
         <button type="button" class="${tipo === 'Viuvo' ? 'active' : ''}" data-toggleval="Viuvo">Viúvo</button>
       </div>
       <div class="grid">
-        ${fieldSelect('jovem','Nome do Jovem', jovens.map(j => j.nome), { disabled: tipo !== 'Jovem', required:true })}
-        ${fieldSelect('viuvo','Nome do Viúvo(a)', viuvos.map(v => v.nome), { disabled: tipo !== 'Viuvo', required:true })}
-        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required:true })}
-        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required:true })}
+        ${fieldSelect('jovem','Nome do Jovem', jovens.map(j => j.nome), { disabled: tipo !== 'Jovem', required: tipo === 'Jovem' })}
+        ${fieldSelect('viuvo','Nome do Viúvo(a)', viuvos.map(v => v.nome), { disabled: tipo !== 'Viuvo', required: tipo === 'Viuvo' })}
+        ${fieldSelect('apelido_ele','Apelido Ele', casais.map(c => c.apelido_esposo).filter(Boolean), { disabled: tipo !== 'Casal', required: tipo === 'Casal' })}
+        ${fieldText('apelido_ela','Apelido Ela', { readonly: true, disabled: tipo !== 'Casal', hint: 'Autopreenchido conforme "Apelido Ele"', required: tipo === 'Casal' })}
         ${fieldSelect('encontro','Encontro', ENCONTRO_OPTS, { required:true })}
         ${fieldSelect('etapa','Etapa', ETAPAS, { required:true })}
         ${fieldSelect('testemunho','Testemunho Proferido', catalogo.map(t => t.titulo), { hint: 'Lista filtrada pela Etapa · catálogo fixo (admin)', required:true })}
@@ -1302,13 +1302,13 @@ function renderRecibo() {
     <h2 class="page-title">Recibo de Pagamento</h2>
     <form id="reciboForm" class="card" autocomplete="off">
       <div class="grid">
-        <div class="field"><label>Valor R$ <span class="req-mark">*</span></label><input type="text" id="recValor" value="${formState.recValor || ''}" placeholder="R$ 0,00" required></div>
-        <div class="field"><label>Valor por Extenso <span class="req-mark">*</span></label><input type="text" id="recExtenso" value="${formState.recExtenso || ''}" readonly required></div>
-        <div class="field"><label>Pagador (CPF/CNPJ) <span class="req-mark">*</span></label><input type="text" id="recPagador" value="${formState.recPagador || ''}" placeholder="000.000.000-00" required></div>
-        <div class="field"><label>Recebedor (CPF/CNPJ) <span class="req-mark">*</span></label><input type="text" id="recRecebedor" value="${formState.recRecebedor || ''}" placeholder="000.000.000-00" required></div>
-        <div class="field"><label>Nome <span class="req-mark">*</span></label><input type="text" id="recPagadorNome" value="${formState.recPagadorNome || ''}" placeholder="Nome do pagador" required></div>
-        <div class="field"><label>Nome <span class="req-mark">*</span></label><input type="text" id="recRecebedorNome" value="${recebedorNomeVal}" placeholder="Nome do recebedor" required></div>
-        <div class="field full"><label>Referente a <span class="req-mark">*</span></label><textarea id="recReferente" rows="3" required>${formState.recReferente || ''}</textarea></div>
+        <div class="field"><label>Valor R$ <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="recValor" value="${formState.recValor || ''}" placeholder="R$ 0,00" required></div>
+        <div class="field"><label>Valor por Extenso</label><input type="text" id="recExtenso" value="${formState.recExtenso || ''}" readonly></div>
+        <div class="field"><label>Pagador (CPF/CNPJ) <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="recPagador" value="${formState.recPagador || ''}" placeholder="000.000.000-00" required></div>
+        <div class="field"><label>Recebedor (CPF/CNPJ) <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="recRecebedor" value="${formState.recRecebedor || ''}" placeholder="000.000.000-00" required></div>
+        <div class="field"><label>Nome <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="recPagadorNome" value="${formState.recPagadorNome || ''}" placeholder="Nome do pagador" required></div>
+        <div class="field"><label>Nome <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="recRecebedorNome" value="${recebedorNomeVal}" placeholder="Nome do recebedor" required></div>
+        <div class="field full"><label>Referente a <span class="req-star" title="Campo obrigatório">*</span></label><textarea id="recReferente" rows="3" required>${formState.recReferente || ''}</textarea></div>
         <div class="field"><label>Data</label><input type="text" value="${hoje}" readonly></div>
       </div>
       <div class="btn-row">
@@ -1343,8 +1343,11 @@ function bindReciboEvents() {
   document.getElementById('recReferente').addEventListener('input', (e) => { formState.recReferente = e.target.value; });
   document.getElementById('btnLimparRecibo').addEventListener('click', () => { formState = {}; renderMain(); showToast('Formulário limpo.'); });
   document.getElementById('btnGerarReciboPdf').addEventListener('click', () => {
-    const form = document.getElementById('reciboForm');
-    if (!form.reportValidity()) return;
+    const reciboForm = document.getElementById('reciboForm');
+    if (reciboForm && !reciboForm.reportValidity()) {
+      showToast('Preencha os campos obrigatórios (marcados com *) antes de gerar o recibo.');
+      return;
+    }
     const win = window.open('', '_blank');
     const hoje = new Date().toLocaleDateString('pt-BR');
     const pagadorNome = formState.recPagadorNome || '____________________';
@@ -1457,22 +1460,26 @@ async function renderAgendaPopupBody() {
     const e = agendaState.editing || { nome: '', descricao: '', data_inicial: iso, hora_inicial: '', data_final: iso, hora_final: '' };
     body.innerHTML = `
       <form id="agendaForm" autocomplete="off">
-      <div class="field full"><label>Nome do Evento <span class="req-mark">*</span></label><input type="text" id="agNome" value="${e.nome || ''}" required></div>
-      <div class="field full"><label>Descrição do Evento <span class="req-mark">*</span></label><textarea id="agDesc" rows="2" required>${e.descricao || ''}</textarea></div>
-      <div class="grid">
-        <div class="field"><label>Data Inicial <span class="req-mark">*</span></label><input type="date" id="agDataIni" value="${e.data_inicial || ''}" required></div>
-        <div class="field"><label>Hora Inicial <span class="req-mark">*</span></label><input type="time" id="agHoraIni" value="${e.hora_inicial || ''}" required></div>
-        <div class="field"><label>Data Final <span class="req-mark">*</span></label><input type="date" id="agDataFim" value="${e.data_final || ''}" required></div>
-        <div class="field"><label>Hora Final <span class="req-mark">*</span></label><input type="time" id="agHoraFim" value="${e.hora_final || ''}" required></div>
-      </div>
-      <div class="btn-row">
-        <button type="button" class="btn btn-ghost" id="agendaCancelForm">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="agendaSalvar">${agendaState.editing ? 'Salvar' : 'Criar Evento'}</button>
-      </div>
+        <div class="field full"><label>Nome do Evento <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="agNome" value="${e.nome || ''}" required></div>
+        <div class="field full"><label>Descrição do Evento <span class="req-star" title="Campo obrigatório">*</span></label><textarea id="agDesc" rows="2" required>${e.descricao || ''}</textarea></div>
+        <div class="grid">
+          <div class="field"><label>Data Inicial <span class="req-star" title="Campo obrigatório">*</span></label><input type="date" id="agDataIni" value="${e.data_inicial || ''}" required></div>
+          <div class="field"><label>Hora Inicial <span class="req-star" title="Campo obrigatório">*</span></label><input type="time" id="agHoraIni" value="${e.hora_inicial || ''}" required></div>
+          <div class="field"><label>Data Final <span class="req-star" title="Campo obrigatório">*</span></label><input type="date" id="agDataFim" value="${e.data_final || ''}" required></div>
+          <div class="field"><label>Hora Final <span class="req-star" title="Campo obrigatório">*</span></label><input type="time" id="agHoraFim" value="${e.hora_final || ''}" required></div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost" id="agendaCancelForm">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="agendaSalvar">${agendaState.editing ? 'Salvar' : 'Criar Evento'}</button>
+        </div>
       </form>`;
     document.getElementById('agendaCancelForm').addEventListener('click', () => { agendaState.view = 'list'; renderAgendaPopupBody(); });
     document.getElementById('agendaSalvar').addEventListener('click', async () => {
-      if (!document.getElementById('agendaForm').reportValidity()) return;
+      const agendaForm = document.getElementById('agendaForm');
+      if (agendaForm && !agendaForm.reportValidity()) {
+        showToast('Preencha os campos obrigatórios (marcados com *) antes de salvar.');
+        return;
+      }
       const dados = { nome: val('agNome'), descricao: val('agDesc'), data_inicial: val('agDataIni'), hora_inicial: val('agHoraIni'), data_final: val('agDataFim'), hora_final: val('agHoraFim') };
       try {
         if (agendaState.editing) await api(`/agenda/${agendaState.editing.id}`, { method: 'PUT', body: JSON.stringify(dados) });
@@ -1568,16 +1575,16 @@ async function openCaixaPopup(editingId2) {
   document.getElementById('caixaPopupTitle').textContent = editingId2 != null ? 'Editar Lançamento' : 'Novo Lançamento';
   document.getElementById('caixaPopupBody').innerHTML = `
     <form id="caixaForm" autocomplete="off">
-    <div class="grid">
-      <div class="field"><label>Tipo <span class="req-mark">*</span></label><select id="cxTipo" required><option ${r.tipo === 'Entrada' ? 'selected' : ''}>Entrada</option><option ${r.tipo === 'Saída' ? 'selected' : ''}>Saída</option></select></div>
-      <div class="field"><label>Data <span class="req-mark">*</span></label><input type="text" id="cxData" value="${isoToBr(r.data)}" placeholder="dd/mm/aaaa" maxlength="10" required></div>
-      <div class="field full"><label>Descrição <span class="req-mark">*</span></label><input type="text" id="cxDescricao" value="${r.descricao || ''}" required></div>
-      <div class="field"><label>Valor R$ <span class="req-mark">*</span></label><input type="text" id="cxValor" value="${r.valor || ''}" required></div>
-    </div>
-    <div class="btn-row">
-      <button type="button" class="btn btn-ghost" id="cxCancelar">${editingId2 != null ? 'Cancelar' : 'Limpar'}</button>
-      <button type="button" class="btn btn-primary" id="cxSalvar">Salvar</button>
-    </div>
+      <div class="grid">
+        <div class="field"><label>Tipo <span class="req-star" title="Campo obrigatório">*</span></label><select id="cxTipo" required><option ${r.tipo === 'Entrada' ? 'selected' : ''}>Entrada</option><option ${r.tipo === 'Saída' ? 'selected' : ''}>Saída</option></select></div>
+        <div class="field"><label>Data <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="cxData" value="${isoToBr(r.data)}" placeholder="dd/mm/aaaa" maxlength="10" required></div>
+        <div class="field full"><label>Descrição <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="cxDescricao" value="${r.descricao || ''}" required></div>
+        <div class="field"><label>Valor R$ <span class="req-star" title="Campo obrigatório">*</span></label><input type="text" id="cxValor" value="${r.valor || ''}" required></div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="cxCancelar">${editingId2 != null ? 'Cancelar' : 'Limpar'}</button>
+        <button type="button" class="btn btn-primary" id="cxSalvar">Salvar</button>
+      </div>
     </form>`;
   document.getElementById('caixaPopupOverlay').classList.add('open');
   document.getElementById('caixaPopupFechar').onclick = () => {
@@ -1589,7 +1596,11 @@ async function openCaixaPopup(editingId2) {
     else openCaixaPopup(null);
   });
   document.getElementById('cxSalvar').addEventListener('click', async () => {
-    if (!document.getElementById('caixaForm').reportValidity()) return;
+    const caixaForm = document.getElementById('caixaForm');
+    if (caixaForm && !caixaForm.reportValidity()) {
+      showToast('Preencha os campos obrigatórios (marcados com *) antes de salvar.');
+      return;
+    }
     const dados = { tipo: val('cxTipo'), data: brToIso(val('cxData')), descricao: val('cxDescricao'), valor: parseFloat(val('cxValor').toString().replace(',', '.')) || 0 };
     try {
       if (editingId2 != null) await api(`/caixa/${editingId2}`, { method: 'PUT', body: JSON.stringify(dados) });
@@ -1918,8 +1929,13 @@ function bindMainEvents() {
       });
     });
     document.getElementById('btnSave').addEventListener('click', () => {
-      if (!form.reportValidity()) return;
       syncFormValues();
+      // Bloqueia o salvamento se algum campo obrigatório (marcado com *)
+      // estiver vazio — mostra o aviso nativo do navegador no campo em questão.
+      if (!form.reportValidity()) {
+        showToast('Preencha os campos obrigatórios (marcados com *) antes de salvar.');
+        return;
+      }
       pendingSave = { tabela: form.dataset.tabela, data: { ...formState } };
       document.getElementById('modalOverlay').classList.add('open');
     });
@@ -2150,3 +2166,4 @@ document.addEventListener('keydown', (e) => {
     ov.classList.remove('open');
   });
 });
+
