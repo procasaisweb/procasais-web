@@ -1,0 +1,37 @@
+name: Supabase Keepalive
+
+# Objetivo: fazer uma chamada leve à API do Supabase a cada 3 dias para que
+# o projeto (plano gratuito) nunca acumule 7 dias de inatividade e seja
+# pausado automaticamente. Não escreve nem lê dados de nenhuma tabela —
+# só bate no endpoint de saúde da API, o que já conta como atividade.
+#
+# Configuração necessária (uma única vez):
+#   1. No GitHub: Settings → Secrets and variables → Actions → New repository secret
+#      - SUPABASE_URL       = https://SEU-PROJETO.supabase.co
+#      - SUPABASE_ANON_KEY  = a chave "anon" (Project Settings → API)
+#   2. Pronto. O workflow já roda sozinho no cronograma abaixo.
+#
+# Também pode ser disparado manualmente em: Actions → Supabase Keepalive → Run workflow
+
+on:
+  schedule:
+    # A cada 3 dias às 09:00 UTC — margem segura dentro do limite de 7 dias
+    - cron: '0 9 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (auth health + REST root)
+        run: |
+          set -e
+          echo "Pingando Auth health endpoint..."
+          curl -sS -o /dev/null -w "auth/v1/health -> HTTP %{http_code}\n" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/auth/v1/health"
+
+          echo "Pingando REST root..."
+          curl -sS -o /dev/null -w "rest/v1/ -> HTTP %{http_code}\n" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/"
